@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Sky1 by wangfakang</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Sky1</h1>
+        <p class="header">ngx_http_dyups_module的解析</p>
+
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/wangfakang/sky1/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/wangfakang/sky1/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/wangfakang/sky1">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/wangfakang">wangfakang</a></p>
+
+
+      </header>
+      <section>
+        <p><code>对NGX_HTTP_DYUPS_MODULE的分析：
+</code></p>
+
+<h1>
+<a id="内容" class="anchor" href="#%E5%86%85%E5%AE%B9" aria-hidden="true"><span class="octicon octicon-link"></span></a>内容：</h1>
+
+<h2>
+<a id="一配置说明" class="anchor" href="#%E4%B8%80%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E" aria-hidden="true"><span class="octicon octicon-link"></span></a>一：配置说明</h2>
+
+<h2>
+<a id="二使用实列" class="anchor" href="#%E4%BA%8C%E4%BD%BF%E7%94%A8%E5%AE%9E%E5%88%97" aria-hidden="true"><span class="octicon octicon-link"></span></a>二：使用实列</h2>
+
+<h2>
+<a id="三总结注意点" class="anchor" href="#%E4%B8%89%E6%80%BB%E7%BB%93%E6%B3%A8%E6%84%8F%E7%82%B9" aria-hidden="true"><span class="octicon octicon-link"></span></a>三：总结注意点</h2>
+
+<h3>
+<a id="一配置说明-1" class="anchor" href="#%E4%B8%80%E9%85%8D%E7%BD%AE%E8%AF%B4%E6%98%8E-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>一：配置说明</h3>
+
+<div class="highlight highlight-nginx"><pre>file: <span class="pl-k">conf/nginx.conf</span>
+
+    daemon<span class="pl-c1"> off</span>;
+    <span class="pl-k">error_log</span> logs/error.log<span class="pl-c1"> debug</span>;
+
+    <span class="pl-k">events</span> {
+    }
+
+    <span class="pl-k">http</span> {
+
+        <span class="pl-k">dyups_upstream_conf</span>  conf/upstream.conf;
+
+        <span class="pl-k">include</span> conf/upstream.conf;
+
+        <span class="pl-k">server</span> {
+            <span class="pl-k">listen</span>   <span class="pl-s">8080</span>;
+
+            <span class="pl-k">location</span> <span class="pl-en">/ </span>{ 
+                <span class="pl-k">proxy_pass</span> http://<span class="pl-smi">$host</span>;
+            }
+        }
+
+        <span class="pl-k">server</span> {
+            <span class="pl-k">listen</span> <span class="pl-s">8088</span>;
+            <span class="pl-k">location</span> <span class="pl-en">/ </span>{ 
+                <span class="pl-c1">return</span> <span class="pl-s">200</span> <span class="pl-s">"8088"</span>;
+            }
+        }
+
+        <span class="pl-k">server</span> {
+            <span class="pl-k">listen</span> <span class="pl-s">8089</span>;
+            <span class="pl-k">location</span> <span class="pl-en">/ </span>{
+                <span class="pl-c1">return</span> <span class="pl-s">200</span> <span class="pl-s">"8089"</span>;
+            }
+        }
+
+        <span class="pl-k">server</span> {
+            <span class="pl-k">listen</span> <span class="pl-s">8081</span>;
+            <span class="pl-k">location</span> <span class="pl-en">/ </span>{
+                dyups_interface;  //表示接口站点（即管理主机）
+            }
+        }
+    }
+
+</pre></div>
+
+<p>指定在某个upstream中启用动态域名解析功能。</p>
+
+<h3>
+<a id="二使用实列-1" class="anchor" href="#%E4%BA%8C%E4%BD%BF%E7%94%A8%E5%AE%9E%E5%88%97-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>二：使用实列</h3>
+
+<ul>
+<li>增加upstream:<br>
+curl -d "server 127.0.0.1:801;server 127.0.0.1:802;" 127.0.0.1:81/upstream/ttlsa3<br>
+</li>
+<li>删除upstream:<br>
+curl -i -X DELETE 127.0.0.1:81/upstream/ttlsa1</li>
+<li>发送请求<br>
+curl -H "host: ttlsa1" 127.0.0.1:8080</li>
+</ul>
+
+<h3>
+<a id="三总结注意点-1" class="anchor" href="#%E4%B8%89%E6%80%BB%E7%BB%93%E6%B3%A8%E6%84%8F%E7%82%B9-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>三：总结注意点</h3>
+
+<p>dyups的总体设计思想：</p>
+
+<p>１.首先是多个worker进程是如何做到信息同步的（如：发送一个delete upstream　如何让所有worker进程都删除）：<br>
+　　　其实dyups的是这样设计的：使用一块共享内存来存放相关的操作命令，过程是这样的－－－当外部发送一个“删除一个upstream”的请求的时候，此时会有一个worker进程接受这个请求　并执行这个命令，　当这个worker进程执行完了的时候，会把该条命令插入共享消息队列中，然后其他的worker定时拉取这个命令queue队列来执行，当然有人会想　那我自己是不是下次也会再次执行这个命令恩？　其实加了相应的逻辑判断----每次获取到该命令的时候会判断这个msg-&gt;pid[i] == ngx_pid ?若当前执行过了　　则上述条件为真　会有记录的，　当然又有人会问　那么随着用户发送的请求命令越来月多了　则这个存储命令的队列是不是会越来越大，　答案：　不是的，每一个msg会有一个count计数，当count为worker_process数量的时候就会把该条msg命令删除（表示每一个worker进程都执行过了）。还有个问题就是为啥不是一个worker进程收到命令请求之后就把其命令发送到消息队列恩　这样不是可以让其他的worker进程更快的同步嘛？原因也很简单：这样可以确保这条命令的正确性，只有当前worker进程执行成功了才把该条命令存储到共享消息队列中。</p>
+
+<p>　　　在这里我有一个小的想法来解决多个worker进程的数据同步，利用init_worker_by_lua阶段为每一个worker设置定时函数定期的去拉取share_dict中命令，当然操作者每次操作的命令是存放在share_dict中的（可以把命令当做key,然后把命令相应携带的数据存放在key对应的value中，最终worker获取到根据key进行相应的　参数解析就可以了）。</p>
+
+<p>２．使用沙盒更新，保证后续可回滚:<br>
+　　　这一点思想是值得我们去学习的，就是当我们做一件事情的时候－－－要是这件事会对原有的东西做改变，那么最好先去做一次虚拟性的改变，当其该次虚拟改变成功的时候才去触发我们要做的事情，这样可以让我们做事更安全一点。</p>
+
+<p>３．为了最大程度的提高性能，使用两种锁－－用户可以选择：<br>
+　　　　　  ngx_shmtx_lock和ngx_shmtx_trylock两种锁，其中ngx_shmtx_trylock这个锁每次执行的时候只是去抢一下锁，当没有抢到则立即返回失败。ngx_shmtx_lock锁相当于一个自旋锁（splinlock）当进程执行到此处的时候会是一个死循环的去进行抢锁，当然中间加了一些自己的限制机制（当抢一次失败的时候会增加下一次去抢所的时间间隔，而且抢了很多次后还是抢不到锁的时候就会先让出cpu一会（此处调用ngx_sched_yield让其他的程序先执行－－－找一个优先级等于或是高于当前程序的去执行）），相比之下ngx_shmtx_trylock的性能高多了。　这两个锁都是使用了cpu级别的原子操作，不会发生上下文的切换。<br>
+　　　注意这两个锁和线程锁的区别，线程锁一般是要发生上下文切换的，这个比较耗费系统性能。但是自旋锁也有自身的缺点比如在极端情况下自旋锁会一直死循环占用cpu，浪费资源。</p>
+
+<p>４．当进行删除一个upstream的时候，dyups在这里踩的坑还是蛮多的：<br>
+　　　在这里我突然想到了c++中的delete+析构函数了，同一个道理，但是在我们现实codeing中还是踩上了这个地雷。delete 一个对象的时候的思想：析构一个对象的过程，其实做了两件事情：(1).调用析构函数　(2).调用释放空间的函数。其实就是先把对象给搞走，然后把对象的空间释放了。在dyups中我们删除一个upstream的时候要确保别处都没有使用这个upstream了才可以去真正的释放，比如在使用了keepalive的时候，要真的等到没有在使用了才可以真的去释放，在dyups中是这么做的使用一个ref引用计数来标记每一个upstream只有当ref为０的时候才可以删除upstream. 这里的ref引用计数分为两部分：(1).client request 和 upstream connection
+在 client request 的 init_peer 和 r-&gt;pool 的 clean_handle 里对 client request 进行引用计数的加减。(2).在 upstream connection 的 free_peer 和 pc-&gt;connection-&gt;pool 的clean handler 里进行对后端连接的引用计数的加减。只有最后ref为０才去真的删除。</p>
+
+<p>５．关于proxy_pass后面跟变量的时候的效率问题：<br>
+　　　当我们在proxy_pass后面跟一个变量的时候，其nginx会遍历所有的upstream的，如果当我们有大量的upstream的时候，这可能是一个性能瓶颈。其tengine是这样解决的使用了red_balack_tree进行存储upstream。</p>
+
+<p>６．关于删除一个upstream的时候，如果proxy_pass后面没有使用变量，则删除是没有生效的－－－当来一个请求的时候还是会访问到已经删除的：<br>
+　　　原因就是当在proxy_pass后面跟的不是变量的时候，其nginx是不会去查找upstream　list的，而是使用直接原来的配置文件中的upstream结构。</p>
+
+<pre><code>if(u-&gt;resolved == NULL) {　　//不使用变量的时候resolved就是NULL 这个的原因要追杀到proxy_pass中，由于直接给的值就没有变量了也就不会执行函数ngx_http_script_compile所以proxy_length就是NULL最后就不会执行ngx_http_proxy_eval函数。
+
+    uscf = u-&gt;conf-&gt;upstream;
+} else {}
+</code></pre>
+
+<h2>
+<a id="有问题反馈" class="anchor" href="#%E6%9C%89%E9%97%AE%E9%A2%98%E5%8F%8D%E9%A6%88" aria-hidden="true"><span class="octicon octicon-link"></span></a>有问题反馈</h2>
+
+<p>在使用中有任何问题，欢迎反馈给我，可以用以下联系方式跟我交流</p>
+
+<ul>
+<li>邮件(1031379296#qq.com, 把#换成@)</li>
+<li>QQ: 1031379296</li>
+<li>weibo: <a href="http://weibo.com/u/2786211992/home">@王发康</a>
+</li>
+</ul>
+
+<h2>
+<a id="感激" class="anchor" href="#%E6%84%9F%E6%BF%80" aria-hidden="true"><span class="octicon octicon-link"></span></a>感激</h2>
+
+<h3>
+<a id="chunshengsteratgmailcom" class="anchor" href="#chunshengsteratgmailcom" aria-hidden="true"><span class="octicon octicon-link"></span></a>chunshengsterATgmail.com</h3>
+
+<h2>
+<a id="关于作者" class="anchor" href="#%E5%85%B3%E4%BA%8E%E4%BD%9C%E8%80%85" aria-hidden="true"><span class="octicon octicon-link"></span></a>关于作者</h2>
+
+<h3>
+<a id="linuxnginxgolangcc爱好者" class="anchor" href="#linuxnginxgolangcc%E7%88%B1%E5%A5%BD%E8%80%85" aria-hidden="true"><span class="octicon octicon-link"></span></a>Linux\nginx\golang\c\c++爱好者</h3>
+
+<h3>
+<a id="欢迎一起交流--一起学习" class="anchor" href="#%E6%AC%A2%E8%BF%8E%E4%B8%80%E8%B5%B7%E4%BA%A4%E6%B5%81--%E4%B8%80%E8%B5%B7%E5%AD%A6%E4%B9%A0" aria-hidden="true"><span class="octicon octicon-link"></span></a>欢迎一起交流  一起学习#</h3>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
+  </body>
+</html>
